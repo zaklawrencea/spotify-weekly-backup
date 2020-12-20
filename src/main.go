@@ -35,10 +35,13 @@ type AuthResponse struct {
 
 func main() {
 	var token = tokenRefresh()
-	getSongs(token)
+	var songIDs []string
+
+	songIDs = getSongs(token)
+	fmt.Println(songIDs)
 }
 
-func tokenRefresh() string {
+func tokenRefresh() (string) {
 
 	// Setting the body and header for the POST request
 	var data = strings.NewReader( 
@@ -81,7 +84,7 @@ func tokenRefresh() string {
 	return string(authResponse.Access_Token)
 }
 
-func getSongs(token string) {
+func getSongs(token string) ([]string) {
 
 	// Get songs from discover weekly playlist
 
@@ -90,7 +93,10 @@ func getSongs(token string) {
 
 	// Create GET request
 	// Get song name + song ID for tracks in discovery weekly playlist
-	req, err := http.NewRequest("GET", "https://api.spotify.com/v1/playlists/"+secrets.DiscoverWeekly+"/tracks?fields=items(track(name,id))", nil)
+	req, err := http.NewRequest("GET", "https://api.spotify.com/v1/playlists/" 	+
+								secrets.DiscoverWeekly 							+
+								"/tracks?fields=items(track(name,id))", nil)
+	
 	req.Header.Set("Authorization", bearer)
 	req.Header.Set("Content-Type", "application/json")
 
@@ -120,9 +126,14 @@ func getSongs(token string) {
 		panic(err)
 	}
 
-	// Print song name + id
+	// Add song ids to a slice
+	var foundSongIDs []string
 	for _,i := range val.Items {
-		fmt.Println(i.Track.ID)
-		fmt.Println(i.Track.Name)
+		//fmt.Println(i.Track.ID)
+		//fmt.Println(i.Track.Name)
+		foundSongIDs = append(foundSongIDs, i.Track.ID)
+		
 	}
+
+	return foundSongIDs
 }
