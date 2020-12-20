@@ -6,13 +6,23 @@ import (
 	"net/http"
 	"encoding/json"
 	"strings"
+	"bytes"
 
 	secrets "./mylib"
 )
 
-// type Song struct {
-// 	Href string
-// }
+type SongData struct {
+	Items []Items
+}
+
+type Items struct {
+	Track Tracks
+}
+
+type Tracks struct {
+	ID string
+	Name string
+}
 
 type AuthResponse struct {
 
@@ -24,13 +34,14 @@ type AuthResponse struct {
 }
 
 func main() {
-
 	var token = tokenRefresh()
-	fmt.Println(token)
-	//getPlaylist()
+	var songIDs []string
+
+	songIDs = getSongs(token)
+	fmt.Println(songIDs)
 }
 
-func tokenRefresh() string {
+func tokenRefresh() (string) {
 
 	// Setting the body and header for the POST request
 	var data = strings.NewReader( 
@@ -73,6 +84,56 @@ func tokenRefresh() string {
 	return string(authResponse.Access_Token)
 }
 
-func getPlaylist() {
+func getSongs(token string) ([]string) {
 
+	// Get songs from discover weekly playlist
+
+	// Format bearer token for headers
+	var bearer = "Bearer " + token
+
+	// Create GET request
+	// Get song name + song ID for tracks in discovery weekly playlist
+	req, err := http.NewRequest("GET", "https://api.spotify.com/v1/playlists/" 	+
+								secrets.DiscoverWeekly 							+
+								"/tracks?fields=items(track(name,id))", nil)
+	
+	req.Header.Set("Authorization", bearer)
+	req.Header.Set("Content-Type", "application/json")
+
+	// Send request
+	client := &http.Client{}
+	resp, err := client.Do(req)
+
+	// Error handling
+	if err != nil {
+		panic(err)
+	}
+
+	// Read response
+	body, err := ioutil.ReadAll(resp.Body)
+	defer resp.Body.Close()
+
+	// Parse response as JSON
+	r := bytes.NewReader(body)
+	decoder := json.NewDecoder(r)
+	
+	val := &SongData{}
+
+	decodeErr := decoder.Decode(val)
+
+	// Error handling
+	if decodeErr != nil {
+		panic(err)
+	}
+
+	// Add song ids to a slice
+	var foundSongIDs []string
+	for _,i := range val.Items {
+		//fmt.Println(i.Track.ID)
+		//fmt.Println(i.Track.Name)
+		foundSongIDs = append(foundSongIDs, i.Track.ID)
+		
+	}
+
+	return foundSongIDs
 }
