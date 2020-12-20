@@ -34,11 +34,12 @@ type AuthResponse struct {
 }
 
 func main() {
-	var token = tokenRefresh()
 	var songIDs []string
-
+	token := tokenRefresh()
 	songIDs = getSongs(token)
 	fmt.Println(songIDs)
+
+	addSongsToPlaylist(token)
 }
 
 func tokenRefresh() (string) {
@@ -88,17 +89,21 @@ func getSongs(token string) ([]string) {
 
 	// Get songs from discover weekly playlist
 
-	// Format bearer token for headers
-	var bearer = "Bearer " + token
-
 	// Create GET request
 	// Get song name + song ID for tracks in discovery weekly playlist
 	req, err := http.NewRequest("GET", "https://api.spotify.com/v1/playlists/" 	+
 								secrets.DiscoverWeekly 							+
 								"/tracks?fields=items(track(name,id))", nil)
 	
+
+	var bearer = "Bearer " + token
 	req.Header.Set("Authorization", bearer)
 	req.Header.Set("Content-Type", "application/json")
+
+	// Error handling
+	if err != nil {
+		panic(err)
+	}
 
 	// Send request
 	client := &http.Client{}
@@ -136,4 +141,38 @@ func getSongs(token string) ([]string) {
 	}
 
 	return foundSongIDs
+}
+
+func addSongsToPlaylist(token string) {
+	// Check if playlist exists. Exists - append, Does not exist - create and append
+
+	// Create POST request
+	// Setting the body and header for the POST request
+	var data = strings.NewReader( 
+	`{"name":"discoverWeeklyBackup","public":false}`)
+
+	req, err := http.NewRequest("POST", "https://api.spotify.com/v1/users/" + 
+								secrets.UserID + "/playlists", data)	
+	
+	var bearer = "Bearer " + token
+	req.Header.Set("Authorization", bearer)
+	req.Header.Set("Content-Type", "application/json")
+
+	// Error handling
+	if err != nil {
+		panic(err)
+	}
+
+	// Send the request
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	defer req.Body.Close()
+
+		body, err := ioutil.ReadAll(resp.Body)
+	// Error handling
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(string(body))
 }
