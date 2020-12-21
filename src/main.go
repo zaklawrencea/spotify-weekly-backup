@@ -140,6 +140,7 @@ func getSongs(token string) ([]string) {
 		foundSongURIs = append(foundSongURIs, i.Track.URI)
 	}
 
+	fmt.Println("[OK] Found Discover Weekly sounds")
 	return foundSongURIs
 }
 
@@ -222,5 +223,7 @@ func addToPlaylist(token string, songURIs []string) {
 		panic(err)
 	}
 
+	fmt.Printf("[OK] Added discover weekly songs to archive playlist ID: %s\n\n", secrets.DiscoverWeeklyPlaylist)
 	fmt.Println(string(body))
+	fmt.Println()
 }
