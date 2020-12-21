@@ -35,13 +35,18 @@ type AuthResponse struct {
 
 func main() {
 	var songIDs []string
+
 	token := tokenRefresh()
+	token = "Bearer " + token
+
 	songIDs = getSongs(token)
 	fmt.Println(songIDs)
 
-	addSongsToPlaylist(token)
+	addToPlaylist (token, songIDs)
+	//createPlaylist(token, discoverWeeklyBackup)
 }
 
+// Use the refresh token to generate a new bearer token
 func tokenRefresh() (string) {
 
 	// Setting the body and header for the POST request
@@ -85,9 +90,8 @@ func tokenRefresh() (string) {
 	return string(authResponse.Access_Token)
 }
 
+// Get songs from discover weekly playlist
 func getSongs(token string) ([]string) {
-
-	// Get songs from discover weekly playlist
 
 	// Create GET request
 	// Get song name + song ID for tracks in discovery weekly playlist
@@ -96,8 +100,8 @@ func getSongs(token string) ([]string) {
 								"/tracks?fields=items(track(name,id))", nil)
 	
 
-	var bearer = "Bearer " + token
-	req.Header.Set("Authorization", bearer)
+	//var bearer = "Bearer " + token
+	req.Header.Set("Authorization", token)
 	req.Header.Set("Content-Type", "application/json")
 
 	// Error handling
@@ -143,19 +147,20 @@ func getSongs(token string) ([]string) {
 	return foundSongIDs
 }
 
-func addSongsToPlaylist(token string) {
-	// Check if playlist exists. Exists - append, Does not exist - create and append
+// TODO - Currently unused
+// Create a playlist - return Spotify URI of playlist
+func createPlaylist(token string) {
 
 	// Create POST request
 	// Setting the body and header for the POST request
+	var discoverWeeklyBackup = "Discover Weekly Backup"
 	var data = strings.NewReader( 
-	`{"name":"discoverWeeklyBackup","public":false}`)
+	`{"name":"` + discoverWeeklyBackup + `","public":false}`)
 
 	req, err := http.NewRequest("POST", "https://api.spotify.com/v1/users/" + 
 								secrets.UserID + "/playlists", data)	
 	
-	var bearer = "Bearer " + token
-	req.Header.Set("Authorization", bearer)
+	req.Header.Set("Authorization", token)
 	req.Header.Set("Content-Type", "application/json")
 
 	// Error handling
@@ -168,11 +173,18 @@ func addSongsToPlaylist(token string) {
 	resp, err := client.Do(req)
 	defer req.Body.Close()
 
-		body, err := ioutil.ReadAll(resp.Body)
+	// Read the response
+	body, err := ioutil.ReadAll(resp.Body)
 	// Error handling
 	if err != nil {
 		panic(err)
 	}
 
 	fmt.Println(string(body))
+}
+
+// Add the songs from the current Discover Weekly and add them to the
+// backup playlist
+func addToPlaylist(token string, songIDs []string) {
+	
 }
