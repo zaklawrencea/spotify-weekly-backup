@@ -94,8 +94,8 @@ func getSongs(token string) ([]string) {
 
 	// Create GET request
 	// Get song name + song URI for tracks in discovery weekly playlist
-	req, err := http.NewRequest("GET", "https://api.spotify.com/v1/playlists/" 	+
-								secrets.DiscoverWeekly 							+
+	req, err := http.NewRequest("GET", "https://api.spotify.com/v1/playlists/" +
+								secrets.DiscoverWeekly +
 								"/tracks?fields=items(track(name,uri))", nil)
 	
 
