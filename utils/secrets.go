@@ -1,4 +1,4 @@
-package secrets
+package utils
 
 // Variables Required for generating an access token
 var RefreshToken = ""
