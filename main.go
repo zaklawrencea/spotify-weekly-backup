@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -16,8 +17,6 @@ import (
 const SPOTIFY_API = "https://api.spotify.com/v1"
 
 func main() {
-	// var songURIs []string
-
 	token, err := tokenRefresh()
     if err != nil {
         log.Errorf("Unable to refresh token: %v", err)
@@ -32,8 +31,6 @@ func main() {
     if err != nil {
         log.Errorf("Unable to add songs to backup playlist: %v", err)
     }
-
-	//createPlaylist(token, discoverWeeklyBackup)
 }
 
 // Use the refresh token to generate a new bearer token
@@ -76,9 +73,9 @@ func tokenRefresh() (string, error) {
 func getSongs(token string) (*utils.SongData, error) {
 	// Get song name + song URI for tracks in discovery weekly playlist
     url := fmt.Sprintf(
-        "%s/%s/tracks?fields=items(track(name,uri))",
+        "%s/playlists/%s/tracks?fields=items(track(name,uri))",
         SPOTIFY_API,
-        utils.DiscoverWeekly,
+        utils.DiscoverWeeklyPlaylistID,
     )
     req, err := http.NewRequest(
         http.MethodGet,
@@ -101,6 +98,9 @@ func getSongs(token string) (*utils.SongData, error) {
 
 	// Read response
 	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
 	defer resp.Body.Close()
 
 	// Parse response as JSON
@@ -117,52 +117,15 @@ func getSongs(token string) (*utils.SongData, error) {
 }
 
 
-// TODO - Currently unused
-// Create a playlist - return Spotify URI of playlist
-func createPlaylist(token string) {
-
-	// Create POST request
-	// Setting the body and header for the POST request
-	var discoverWeeklyBackup = "Discover Weekly Backup"
-	var data = strings.NewReader( 
-	`{"name":"` + discoverWeeklyBackup + `","public":false}`)
-
-	req, err := http.NewRequest("POST", "https://api.spotify.com/v1/users/" + 
-								utils.UserID + "/playlists", data)	
-	
-	req.Header.Set("Authorization", token)
-	req.Header.Set("Content-Type", "application/json")
-
-	// Error handling
-	if err != nil {
-		panic(err)
-	}
-
-	// Send the request
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	defer req.Body.Close()
-
-	// Read the response
-	body, err := ioutil.ReadAll(resp.Body)
-	// Error handling
-	if err != nil {
-		panic(err)
-	}
-
-	fmt.Println(string(body))
-}
-
 // Add the songs from the current Discover Weekly and add them to the
 // backup playlist
 func addToPlaylist(token string, songData *utils.SongData) error {
-	
 	var songURIs []string
 	for _, item := range songData.Items {
 		songURIs = append(songURIs, item.Track.URI)
 	}
 
-	// Format songURI 
+	// Format songURIs
 	var discoveredSongs = ""
 	for _, s := range songURIs {
 		discoveredSongs += ("\"" + s + "\",")
@@ -175,7 +138,7 @@ func addToPlaylist(token string, songData *utils.SongData) error {
 	var data = strings.NewReader( 
 	`{"uris":[` + discoveredSongs + `]}`)
 
-    url := fmt.Sprintf("%s/playlists/%s/tracks", SPOTIFY_API, utils.DiscoverWeeklyPlaylist)
+    url := fmt.Sprintf("%s/playlists/%s/tracks", SPOTIFY_API, utils.BackupDiscoverWeeklyPlaylistID)
 	req, err := http.NewRequest(
         http.MethodPost,
         url,
@@ -194,14 +157,20 @@ func addToPlaylist(token string, songData *utils.SongData) error {
 	if err != nil {
         return err
 	}
-	defer req.Body.Close()
 
-	// Read response
-    if resp.StatusCode != http.StatusOK {
-        return errors.New("Non OK status code when adding to playlist")
+    // Read response
+    respBody, err := io.ReadAll(resp.Body)
+    if err != nil {
+        return err
+    }
+	defer resp.Body.Close()
+
+    // Spotify returns 201 with snapshot_id upon success
+    if resp.StatusCode != http.StatusCreated {
+        return errors.New(fmt.Sprintf("Non OK status code when adding to playlist: %v", string(respBody)))
     }
 
-    log.Infof("Added discover weekly songs to archive playlist ID: %s\n\n", utils.DiscoverWeeklyPlaylist)
+    log.Infof("Added discover weekly songs to archive playlist ID: %s\n\n", utils.BackupDiscoverWeeklyPlaylistID)
 
     return nil
 }

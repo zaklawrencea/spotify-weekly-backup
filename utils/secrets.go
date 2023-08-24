@@ -6,11 +6,11 @@ var GrantType = "refresh_token"
 var ClientID = ""
 var ClientSecret = ""
 
-// Spotify generated Discover Weekly playlist. Enter the last section of your Discover Weekly spotify URI
-var DiscoverWeekly = ""
+// Spotify generated Discover Weekly playlist. Enter the section of your Discover Weekly spotify URI directly after playlist/
+var DiscoverWeeklyPlaylistID = ""
 
 // Spotify username
 var UserID = ""
 
-// New Discover Weekly playlist. Enter the last section of you Discovery Weekly Backup spotify URI
-var DiscoverWeeklyPlaylist = ""
+// New Discover Weekly playlist. Enter the section of your Discovery Weekly Backup spotify URI directly after playlist/
+var BackupDiscoverWeeklyPlaylistID = ""
